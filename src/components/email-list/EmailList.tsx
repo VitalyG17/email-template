@@ -1,9 +1,21 @@
+import { useQuery } from '@tanstack/react-query';
 import styles from './EmailList.module.scss';
+import { emailService } from '../../services/email-service';
+import parse from 'html-react-parser';
 
 export function EmailList() {
-  return <div className={styles.list}>
-    <div>
-      Lorem, ipsum dolor sit amet consectetur adipisicing elit. Eum ab incidunt odio error debitis praesentium possimus accusamus, provident saepe modi neque rem eaque iste soluta? Animi repellat illo velit placeat!
+
+  const { data } = useQuery({
+    queryKey: ['email list'],
+    queryFn: () => emailService.getEmails(),
+  });
+
+
+  return (
+    <div className={styles.list}>
+      {data?.map((email) => (
+        <div key={email.text}>{parse(email.text)}</div>
+      ))}
     </div>
-  </div>;
+  );
 }

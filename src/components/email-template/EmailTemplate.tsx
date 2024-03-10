@@ -3,16 +3,27 @@ import styles from './EmailTemplate.module.scss';
 import { useRef, useState } from 'react';
 import { TStyle, applyStyle } from './apply-style';
 import parse from 'html-react-parser';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { emailService } from '../../services/email-service';
 
 export function EmailTemplate() {
-  const [text, setText] = useState(
-    `Lorem ipsum dolor sit amet consectetur adipisicing elit. Magni, ipsum, nisi delectus rem, quae doloribus totam deserunt omnis vel harum facilis odio alias ut possimus suscipit esse unde dolor. Voluptate.`
-  );
+  const [text, setText] = useState(``);
 
   const [selectionStart, setSelectionStart] = useState(0);
   const [selectionEnd, setSelectionEnd] = useState(0);
 
   const textRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const queryClient = useQueryClient()
+
+  const { mutate, isPending } = useMutation({
+    mutationKey: ['create email'],
+    mutationFn: () => emailService.sendEmail(text),
+    onSuccess() {
+      setText('');
+      queryClient.refetchQueries({queryKey: ['email list']})
+    },
+  });
 
   const updateSelection = () => {
     if (!textRef.current) return;
@@ -23,8 +34,8 @@ export function EmailTemplate() {
   const applyFormat = (type: TStyle) => {
     const selectedText = text.substring(selectionStart, selectionEnd);
     if (!selectedText) return;
-    const before = text.substring(0, selectionStart); //Text before selection
-    const after = text.substring(selectionEnd); //Text after selection
+    const before = text.substring(0, selectionStart);
+    const after = text.substring(selectionEnd); 
 
     setText(before + applyStyle(type, selectedText) + after);
   };
@@ -40,6 +51,7 @@ export function EmailTemplate() {
             onSelect={updateSelection}
             value={text}
             onChange={(e) => setText(e.target.value)}
+            placeholder="Enter your message"
           >
             {text}
           </textarea>
@@ -59,7 +71,9 @@ export function EmailTemplate() {
                 <Underline size={17} />
               </button>
             </div>
-            <button>Send</button>
+            <button disabled={isPending} onClick={() => mutate()}>
+              Send
+            </button>
           </div>
           <div className={styles.preview}>
             <h3>Preview</h3>
